@@ -1,2 +1,5 @@
+import model.*
+import ui.*
+
 @main def run(): Unit =
-  println("Chess project is alive")
+  TextUI.print(Board.initial)
