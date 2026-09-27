@@ -2,7 +2,7 @@ package ui
 
 import model.*
 
-object TextUI:
+object TextUI extends BoardRenderer:
 
   private def symbol(piece: Piece): Char =
     val base = piece.pieceType match
@@ -21,7 +21,7 @@ object TextUI:
       case Some(piece) => symbol(piece)
       case None        => '.'
 
-  def render(board: Board): String =
+  def asString(board: Board): String =
     val rows =
       board.squares.zipWithIndex.map { (row, rowIndex) =>
         val rankLabel = 8 - rowIndex
@@ -31,5 +31,6 @@ object TextUI:
     val fileLabels = "  a b c d e f g h"
     (rows :+ fileLabels).mkString("\n")
 
-  def print(board: Board): Unit =
-    println(render(board))
+  // The contract: display the board. Satisfies BoardRenderer.
+  override def render(board: Board): Unit =
+    println(asString(board))
