@@ -1,5 +1,6 @@
 package ui
 
+import logic.*
 import model.*
 import scalafx.Includes.*
 import scalafx.application.JFXApp3
@@ -61,12 +62,11 @@ object ChessGUI extends JFXApp3:
   private def handleClick(pos: Position): Unit =
     selected match
       case None =>
-        // First click: select this square only if it holds a piece.
         if board.pieceAt(pos).isDefined then selected = Some(pos)
       case Some(from) =>
-        // Second click: move from the selected square to here, then clear selection.
-        board = board.move(from, pos)
-        selected = None
+        if MoveValidator.isLegal(board, from, pos) then
+          board = board.move(from, pos) // legal → perform it
+        selected = None // either way, clear selection
     redraw()
 
   private def redraw(): Unit =
