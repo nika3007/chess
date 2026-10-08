@@ -68,7 +68,7 @@ object ChessGUI extends JFXApp3:
         row <- 0 until 8
         col <- 0 until 8
         target = Position(row, col)
-        if MoveValidator.isLegal(board, from, target)
+        if CheckDetector.isLegalConsideringCheck(board, from, target)
       yield target
     dests.toSet
 
@@ -82,18 +82,27 @@ object ChessGUI extends JFXApp3:
   private def handleClick(pos: Position): Unit =
     selected match
       case None =>
-        // Only select a piece that belongs to the player whose turn it is.
         board.pieceAt(pos) match
           case Some(piece) if piece.color == game.turn => selected = Some(pos)
-          case _                                       => () // empty, or enemy piece: ignore
+          case _                                       => ()
       case Some(from) =>
-        if MoveValidator.isLegal(board, from, pos) then
-          game = game.moveMade(from, pos) // legal → new GameState, turn flips
+        if CheckDetector.isLegalConsideringCheck(board, from, pos) then
+          game = game.moveMade(from, pos)
         selected = None
     redraw()
 
+
   private def redraw(): Unit =
-    stage.title = s"Chess — ${game.turn} to move"
+    val status =
+      if CheckDetector.isCheckmate(board, game.turn) then
+        s"Checkmate — ${game.turn.opposite} wins!"
+      else if CheckDetector.isStalemate(board, game.turn) then
+        "Stalemate — draw"
+      else if CheckDetector.isInCheck(board, game.turn) then
+        s"${game.turn} to move — CHECK!"
+      else
+        s"${game.turn} to move"
+    stage.title = s"Chess — $status"
     stage.scene().root = boardGrid(board)
 
   private def boardGrid(board: Board): GridPane =
