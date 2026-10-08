@@ -3,3 +3,4 @@ project/target/
 .bsp/
 .metals/
 .bloop/
+.DS_Store

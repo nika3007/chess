@@ -15,10 +15,11 @@ object ChessGUI extends JFXApp3:
 
   private val tileSize = 60
 
-  // MUTABLE state: the current board, and the first-clicked square (if any).
-  // This is deliberate — a GUI is inherently stateful (what's on screen changes).
-  private var board: Board = Board.initial
+  // was: private var board: Board = Board.initial
+  private var game: GameState = GameState.initial
   private var selected: Option[Position] = None
+
+    private def board: Board = game.board
 
   private def glyph(piece: Piece): String =
     (piece.color, piece.pieceType) match
@@ -38,8 +39,10 @@ object ChessGUI extends JFXApp3:
   private def tile(row: Int, col: Int, square: Option[Piece]): StackPane =
     val pos = Position(row, col)
     val isSelected = selected.contains(pos)
+    val isLegalTarget = highlighted.contains(pos)
     val background =
-      if isSelected then FxColor.rgb(130, 151, 105) // highlight selected
+      if isSelected then FxColor.rgb(130, 151, 105)        // selected piece
+      else if isLegalTarget then FxColor.rgb(170, 190, 140) // legal destination
       else if (row + col) % 2 == 0 then FxColor.rgb(240, 217, 181)
       else FxColor.rgb(181, 136, 99)
     val rect = new Rectangle:
@@ -58,18 +61,39 @@ object ChessGUI extends JFXApp3:
     pane.onMouseClicked = _ => handleClick(pos)
     pane
 
+      // All squares the selected piece could legally move to.
+  private def legalDestinations(from: Position): Set[Position] =
+    val dests =
+      for
+        row <- 0 until 8
+        col <- 0 until 8
+        target = Position(row, col)
+        if MoveValidator.isLegal(board, from, target)
+      yield target
+    dests.toSet
+
+  // Compute once per redraw, based on current selection.
+  private def highlighted: Set[Position] =
+    selected match
+      case Some(from) => legalDestinations(from)
+      case None       => Set.empty
+
   // Two-click move: first click selects, second click moves.
   private def handleClick(pos: Position): Unit =
     selected match
       case None =>
-        if board.pieceAt(pos).isDefined then selected = Some(pos)
+        // Only select a piece that belongs to the player whose turn it is.
+        board.pieceAt(pos) match
+          case Some(piece) if piece.color == game.turn => selected = Some(pos)
+          case _                                       => () // empty, or enemy piece: ignore
       case Some(from) =>
         if MoveValidator.isLegal(board, from, pos) then
-          board = board.move(from, pos) // legal → perform it
-        selected = None // either way, clear selection
+          game = game.moveMade(from, pos) // legal → new GameState, turn flips
+        selected = None
     redraw()
 
   private def redraw(): Unit =
+    stage.title = s"Chess — ${game.turn} to move"
     stage.scene().root = boardGrid(board)
 
   private def boardGrid(board: Board): GridPane =
@@ -82,6 +106,6 @@ object ChessGUI extends JFXApp3:
 
   override def start(): Unit =
     stage = new JFXApp3.PrimaryStage:
-      title = "Chess"
+      title = s"Chess — ${game.turn} to move"
       scene = new Scene(tileSize * 8, tileSize * 8):
         root = boardGrid(board)

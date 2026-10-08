@@ -1,7 +1,6 @@
 package model
 
 case class Board(squares: Vector[Vector[Option[Piece]]]):
-
   def pieceAt(pos: Position): Option[Piece] =
     squares(pos.row)(pos.col)
 
